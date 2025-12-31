@@ -1,0 +1,92 @@
+# =========================
+# .NET build output
+# =========================
+bin/
+obj/
+out/
+
+# Explicitly ignore DLLs & EXEs
+*.dll
+*.exe
+*.pdb
+*.mdb
+*.cache
+*.log
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+.nuget/packages/
+packages/
+
+# =========================
+# Visual Studio
+# =========================
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code
+.vscode/
+.history/
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# =========================
+# Test / coverage output
+# =========================
+TestResults/
+coverage/
+coverage.*
+*.trx
+
+# =========================
+# Logs & temp
+# =========================
+*.tmp
+*.temp
+*.swp
+
+# =========================
+# Build artifacts (custom)
+# =========================
+artifacts/
+publish/
+dist/
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+.env.*
+secrets.json
+appsettings.*.json
+
+# =========================
+# Backup / generated files
+# =========================
+*.bak
+*.orig
+
+# =========================
+# Documentation build output
+# =========================
+site/
+docs/_site/
+
+# =========================
+# Ignore generated HTML output (if any)
+# =========================
+*.html
