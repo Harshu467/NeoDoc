@@ -1,3 +1,9 @@
+/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.csproj.AssemblyReference.cache
+/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.GeneratedMSBuildEditorConfig.editorconfig
+/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.AssemblyInfoInputs.cache
+/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.AssemblyInfo.cs
+/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.csproj.CoreCompileInputs.cache
+/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.sourcelink.json
 /workspaces/NeoDoc/src/NeoDoc/bin/Debug/net10.0/NeoDoc.deps.json
 /workspaces/NeoDoc/src/NeoDoc/bin/Debug/net10.0/NeoDoc.dll
 /workspaces/NeoDoc/src/NeoDoc/bin/Debug/net10.0/NeoDoc.pdb
@@ -9,12 +15,6 @@
 /workspaces/NeoDoc/src/NeoDoc/bin/Debug/net10.0/NeoDoc.Docx.pdb
 /workspaces/NeoDoc/src/NeoDoc/bin/Debug/net10.0/NeoDoc.Html.pdb
 /workspaces/NeoDoc/src/NeoDoc/bin/Debug/net10.0/NeoDoc.Rules.pdb
-/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.csproj.AssemblyReference.cache
-/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.GeneratedMSBuildEditorConfig.editorconfig
-/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.AssemblyInfoInputs.cache
-/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.AssemblyInfo.cs
-/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.csproj.CoreCompileInputs.cache
-/workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.sourcelink.json
 /workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.csproj.Up2Date
 /workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/NeoDoc.dll
 /workspaces/NeoDoc/src/NeoDoc/obj/Debug/net10.0/refint/NeoDoc.dll
