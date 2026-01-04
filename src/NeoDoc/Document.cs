@@ -2,6 +2,7 @@ using NeoDoc.Core.Document;
 using NeoDoc.Docx;
 using NeoDoc.Html;
 using NeoDoc.Rules;
+using NeoDoc.Core.Exceptions;
 
 namespace NeoDoc;
 
@@ -16,14 +17,28 @@ public sealed class Document
 
     public static Document Load(string docxPath)
     {
-        var doc = DocxDocumentLoader.Load(docxPath);
-        return new Document(doc);
+        try
+        {
+            var doc = DocxDocumentLoader.Load(docxPath);
+            return new Document(doc);
+        }
+        catch (NeoDocException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new NeoDocException("Unexpected error while loading document.", ex);
+        }
     }
 
-    public void ApplyRules(params IDocRule[] rules)
+
+    public Document ApplyRules(params IDocRule[] rules)
     {
         RuleProcessor.Apply(_doc, rules);
+        return this;
     }
+
 
     public void Save(string htmlPath)
     {

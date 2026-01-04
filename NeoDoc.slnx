@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/examples/">
+    <Project Path="examples/NeoDoc.Examples/NeoDoc.Examples.csproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/NeoDoc.Core/NeoDoc.Core.csproj" />
     <Project Path="src/NeoDoc.Docx/NeoDoc.Docx.csproj" />
