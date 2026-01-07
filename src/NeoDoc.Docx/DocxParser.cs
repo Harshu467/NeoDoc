@@ -105,7 +105,8 @@ internal sealed class DocxParser : IDocxParser
                             Name = imgPart.Uri?.Segments?.LastOrDefault()
                         };
 
-                        docParagraph.AddChild(img);
+                        // Attach image to the specific run
+                        docRun.AddChild(img);
                     }
                 }
                 catch
@@ -135,7 +136,7 @@ internal sealed class DocxParser : IDocxParser
                                 Name = imgPart.Uri?.Segments?.LastOrDefault()
                             };
 
-                            docParagraph.AddChild(img);
+                            docRun.AddChild(img);
                         }
                     }
                     catch
@@ -146,7 +147,7 @@ internal sealed class DocxParser : IDocxParser
             }
         }
 
-        // Fallback: if an image blip exists anywhere in paragraph, extract it
+        // Fallback: if an image blip exists anywhere in paragraph, extract it and attach to the run that contains it if possible
         var paragraphBlip = paragraph.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().FirstOrDefault();
         if (paragraphBlip?.Embed != null && _mainPart != null)
         {
@@ -166,7 +167,24 @@ internal sealed class DocxParser : IDocxParser
                         Name = imgPart.Uri?.Segments?.LastOrDefault()
                     };
 
-                    docParagraph.AddChild(img);
+                    var runs = paragraph.Elements<Run>().ToList();
+                    var runWithBlip = runs.FirstOrDefault(r => r.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().Any());
+                    if (runWithBlip != null)
+                    {
+                        var idx = runs.IndexOf(runWithBlip);
+                        if (idx >= 0 && idx < docParagraph.Runs.Count)
+                            docParagraph.Runs[idx].AddChild(img);
+                        else
+                            docParagraph.AddChild(img);
+                    }
+                    else if (docParagraph.Runs.Any())
+                    {
+                        docParagraph.Runs.First().AddChild(img);
+                    }
+                    else
+                    {
+                        docParagraph.AddChild(img);
+                    }
                 }
             }
             catch
@@ -198,7 +216,25 @@ internal sealed class DocxParser : IDocxParser
                             Name = imgPart.Uri?.Segments?.LastOrDefault()
                         };
 
-                        docParagraph.AddChild(img);
+                        // Attach to run that references this relId when possible
+                        var runs = paragraph.Elements<Run>().ToList();
+                        var runWithRel = runs.FirstOrDefault(r => r.Descendants().SelectMany(d => d.GetAttributes()).Any(a => a.LocalName == "embed" && a.Value == relId) || r.OuterXml.Contains(relId));
+                        if (runWithRel != null)
+                        {
+                            var idx = runs.IndexOf(runWithRel);
+                            if (idx >= 0 && idx < docParagraph.Runs.Count)
+                                docParagraph.Runs[idx].AddChild(img);
+                            else
+                                docParagraph.AddChild(img);
+                        }
+                        else if (docParagraph.Runs.Any())
+                        {
+                            docParagraph.Runs.First().AddChild(img);
+                        }
+                        else
+                        {
+                            docParagraph.AddChild(img);
+                        }
                     }
                 }
                 catch
@@ -208,7 +244,7 @@ internal sealed class DocxParser : IDocxParser
             }
         }
 
-        // Fallback 2: attach the first image part if still empty (best-effort)
+        // Fallback 2: attach the first image part to the first run if available (best-effort)
         if (docParagraph.Children.Count == 0 && _mainPart != null && _mainPart.ImageParts.Any())
         {
             try
@@ -224,7 +260,10 @@ internal sealed class DocxParser : IDocxParser
                     Name = imgPart.Uri?.Segments?.LastOrDefault()
                 };
 
-                docParagraph.AddChild(img);
+                if (docParagraph.Runs.Any())
+                    docParagraph.Runs.First().AddChild(img);
+                else
+                    docParagraph.AddChild(img);
             }
             catch
             {

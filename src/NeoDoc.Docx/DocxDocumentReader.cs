@@ -73,7 +73,8 @@ public sealed class DocxDocumentReader : IDocumentReader
                             Name = imgPart.Uri?.Segments?.LastOrDefault()
                         };
 
-                        docParagraph.AddChild(img);
+                        // Attach image to this run
+                        docRun.AddChild(img);
                     }
                 }
                 catch
@@ -102,7 +103,7 @@ public sealed class DocxDocumentReader : IDocumentReader
                                 Name = imgPart.Uri?.Segments?.LastOrDefault()
                             };
 
-                            docParagraph.AddChild(img);
+                            docRun.AddChild(img);
                         }
                     }
                     catch
@@ -113,7 +114,7 @@ public sealed class DocxDocumentReader : IDocumentReader
             }
         }
 
-        // Fallback: extract blip at paragraph level if not captured per-run
+        // Fallback: extract blip at paragraph level if not captured per-run and attach to a run when possible
         var paragraphBlip = paragraph.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().FirstOrDefault();
         if (paragraphBlip?.Embed != null && mainPart != null)
         {
@@ -133,7 +134,24 @@ public sealed class DocxDocumentReader : IDocumentReader
                         Name = imgPart.Uri?.Segments?.LastOrDefault()
                     };
 
-                    docParagraph.AddChild(img);
+                    var runs = paragraph.Elements<Run>().ToList();
+                    var runWithBlip = runs.FirstOrDefault(r => r.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().Any());
+                    if (runWithBlip != null)
+                    {
+                        var idx = runs.IndexOf(runWithBlip);
+                        if (idx >= 0 && idx < docParagraph.Runs.Count)
+                            docParagraph.Runs[idx].AddChild(img);
+                        else
+                            docParagraph.AddChild(img);
+                    }
+                    else if (docParagraph.Runs.Any())
+                    {
+                        docParagraph.Runs.First().AddChild(img);
+                    }
+                    else
+                    {
+                        docParagraph.AddChild(img);
+                    }
                 }
             }
             catch
@@ -142,11 +160,11 @@ public sealed class DocxDocumentReader : IDocumentReader
             }
         }
 
-        // Fallback 1: look for 'embed' attributes inside the paragraph XML and attach referenced images
+        // Fallback 1: look for 'embed' attributes inside the paragraph XML and attach referenced images to a run when possible
         if (docParagraph.Children.Count == 0 && mainPart != null)
         {
             var xml = paragraph.OuterXml ?? string.Empty;
-            var m = Regex.Match(xml, "embed\s*=\s*\"(?<id>[^"]+)\"");
+            var m = Regex.Match(xml, "embed\\s*=\\s*\"(?<id>[^\"]+)\"");
             if (m.Success)
             {
                 var relId = m.Groups["id"].Value;
@@ -165,7 +183,24 @@ public sealed class DocxDocumentReader : IDocumentReader
                             Name = imgPart.Uri?.Segments?.LastOrDefault()
                         };
 
-                        docParagraph.AddChild(img);
+                        var runs = paragraph.Elements<Run>().ToList();
+                        var runWithRel = runs.FirstOrDefault(r => r.Descendants().SelectMany(d => d.GetAttributes()).Any(a => a.LocalName == "embed" && a.Value == relId) || r.OuterXml.Contains(relId));
+                        if (runWithRel != null)
+                        {
+                            var idx = runs.IndexOf(runWithRel);
+                            if (idx >= 0 && idx < docParagraph.Runs.Count)
+                                docParagraph.Runs[idx].AddChild(img);
+                            else
+                                docParagraph.AddChild(img);
+                        }
+                        else if (docParagraph.Runs.Any())
+                        {
+                            docParagraph.Runs.First().AddChild(img);
+                        }
+                        else
+                        {
+                            docParagraph.AddChild(img);
+                        }
                     }
                 }
                 catch
@@ -175,7 +210,7 @@ public sealed class DocxDocumentReader : IDocumentReader
             }
         }
 
-        // Fallback 2: attach the first image part if still empty
+        // Fallback 2: attach the first image part to the first run if available
         if (docParagraph.Children.Count == 0 && mainPart != null && mainPart.ImageParts.Any())
         {
             try
@@ -191,7 +226,10 @@ public sealed class DocxDocumentReader : IDocumentReader
                     Name = imgPart.Uri?.Segments?.LastOrDefault()
                 };
 
-                docParagraph.AddChild(img);
+                if (docParagraph.Runs.Any())
+                    docParagraph.Runs.First().AddChild(img);
+                else
+                    docParagraph.AddChild(img);
             }
             catch
             {

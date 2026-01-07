@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using System.Text;
 using NeoDoc.Core.Document;
 using NeoDoc.Core.Nodes;
@@ -43,8 +45,65 @@ internal sealed class HtmlRenderer : IHtmlRenderer
     private void RenderParagraph(DocParagraph paragraph, StringBuilder sb)
     {
         sb.Append("<p>");
-        sb.Append(System.Net.WebUtility.HtmlEncode(paragraph.Text));
+
+        if (paragraph.Runs.Any())
+        {
+            foreach (var run in paragraph.Runs)
+            {
+                RenderRun(run, sb);
+            }
+        }
+        else
+        {
+            sb.Append(System.Net.WebUtility.HtmlEncode(paragraph.Text));
+        }
+
+        // Render inline images that were added as children
+        foreach (var child in paragraph.Children)
+        {
+            if (child is DocImage img)
+            {
+                var base64 = Convert.ToBase64String(img.Data);
+                sb.Append($"<img src=\"data:{img.ContentType};base64,{base64}\" alt=\"{System.Net.WebUtility.HtmlEncode(img.Name ?? string.Empty)}\">");
+            }
+        }
+
         sb.AppendLine("</p>");
+    }
+
+    private void RenderRun(DocRun run, StringBuilder sb)
+    {
+        var encoded = System.Net.WebUtility.HtmlEncode(run.Text);
+
+        if (run.Bold)
+            sb.Append("<strong>");
+
+        if (run.Italic)
+            sb.Append("<em>");
+
+        if (run.Underline)
+            sb.Append("<u>");
+
+        sb.Append(encoded);
+
+        // Render inline images that are children of this run (preserve inline position)
+        foreach (var child in run.Children)
+        {
+            if (child is DocImage img)
+            {
+                var base64 = Convert.ToBase64String(img.Data);
+                sb.Append($"<img src=\"data:{img.ContentType};base64,{base64}\" alt=\"{System.Net.WebUtility.HtmlEncode(img.Name ?? string.Empty)}\">");
+            }
+        }
+
+        if (run.Underline)
+            sb.Append("</u>");
+
+        if (run.Italic)
+            sb.Append("</em>");
+
+        if (run.Bold)
+            sb.Append("</strong>");
     }
 
     private void RenderTable(DocTable table, StringBuilder sb)

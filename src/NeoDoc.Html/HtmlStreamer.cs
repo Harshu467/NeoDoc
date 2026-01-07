@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using NeoDoc.Core.Document;
 using NeoDoc.Core.Nodes;
@@ -39,8 +40,54 @@ public static class HtmlStreamer
     private static void RenderParagraph(DocParagraph paragraph, TextWriter writer)
     {
         writer.Write("<p>");
-        writer.Write(System.Net.WebUtility.HtmlEncode(paragraph.Text));
+
+        if (paragraph.Runs != null && paragraph.Runs.Count > 0)
+        {
+            foreach (var run in paragraph.Runs)
+            {
+                RenderRun(run, writer);
+            }
+        }
+        else
+        {
+            writer.Write(System.Net.WebUtility.HtmlEncode(paragraph.Text));
+        }
+
+        foreach (var child in paragraph.Children)
+        {
+            if (child is DocImage img)
+            {
+                var base64 = Convert.ToBase64String(img.Data);
+                writer.Write($"<img src=\"data:{img.ContentType};base64,{base64}\" alt=\"{System.Net.WebUtility.HtmlEncode(img.Name ?? string.Empty)}\">");
+            }
+        }
+
         writer.WriteLine("</p>");
+    }
+
+    private static void RenderRun(DocRun run, TextWriter writer)
+    {
+        var encoded = System.Net.WebUtility.HtmlEncode(run.Text);
+
+        if (run.Bold)
+            writer.Write("<strong>");
+
+        if (run.Italic)
+            writer.Write("<em>");
+
+        if (run.Underline)
+            writer.Write("<u>");
+
+        writer.Write(encoded);
+
+        if (run.Underline)
+            writer.Write("</u>");
+
+        if (run.Italic)
+            writer.Write("</em>");
+
+        if (run.Bold)
+            writer.Write("</strong>");
     }
 
     private static void RenderTable(DocTable table, TextWriter writer)

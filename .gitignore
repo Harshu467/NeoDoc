@@ -1,0 +1,60 @@
+# Root .gitignore for repository
+
+# Build directories
+bin/
+obj/
+out/
+
+# Publish artifacts
+publish/
+examples/**/bin/
+examples/**/obj/
+
+# Explicit file types
+*.dll
+*.exe
+*.pdb
+*.mdb
+*.cache
+*.log
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+.nuget/packages/
+packages/
+
+# IDEs
+.vs/
+.vscode/
+.idea/
+*.sln.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests
+TestResults/
+coverage/
+*.trx
+
+# Misc
+*.tmp
+*.temp
+*.swp
+.env
+.env.*
+secrets.json
+appsettings.*.json
+
+# Docs
+site/
+docs/_site/
+
+# Generated
+*.html
+
+# Publish outputs (dotnet publish)
+publish/
