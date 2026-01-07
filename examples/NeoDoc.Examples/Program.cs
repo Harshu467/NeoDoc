@@ -22,9 +22,9 @@ var data = new Dictionary<string, string>
 
 try
 {
-    Document.Load(inputPath)
+        Document.Load(inputPath)
             .ApplyRules(new PlaceholderRule(data))
-            .Save(outputPath);
+            .SaveStreamed(outputPath);
 
     Console.WriteLine("DOCX to HTML example completed.");
 }
