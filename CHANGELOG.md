@@ -12,3 +12,4 @@ All notable changes to this project will be documented in this file.
 
 ### Tests
 - Added `DocxParser_AttachesImageToCorrectRun` to assert correct run-level image association.
+- Added integration test that parses all DOCX samples in `examples/docx-to-html/input` and ensures parsing + HTML rendering produce output.

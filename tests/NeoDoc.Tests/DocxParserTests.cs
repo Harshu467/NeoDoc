@@ -268,4 +268,24 @@ public class DocxParserTests
 
         File.Delete(file);
     }
+
+    [Fact]
+    public void Integration_ParseExampleDocxFiles()
+    {
+        var repoRoot = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.Environment.CurrentDirectory, "..", "..", "..", ".."));
+        var inputDir = System.IO.Path.Combine(repoRoot, "examples", "docx-to-html", "input");
+        Assert.True(System.IO.Directory.Exists(inputDir), $"Sample input directory not found: {inputDir}");
+
+        var renderer = new NeoDoc.Html.Renderers.HtmlRenderer();
+
+        foreach (var f in System.IO.Directory.GetFiles(inputDir, "*.docx"))
+        {
+            var doc = DocxDocumentLoader.Load(f);
+            Assert.NotNull(doc);
+
+            // ensure rendering doesn't throw and produces some output
+            var html = renderer.Render(doc);
+            Assert.False(string.IsNullOrWhiteSpace(html), $"HTML render was empty for {f}");
+        }
+    }
 }
