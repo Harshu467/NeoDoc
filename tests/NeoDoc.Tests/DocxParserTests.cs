@@ -198,4 +198,74 @@ public class DocxParserTests
 
         File.Delete(file);
     }
+
+    [Fact]
+    public void DocxParser_ParsesAnchorImage()
+    {
+        var tmp = System.IO.Path.GetTempFileName();
+        File.Delete(tmp);
+        var file = tmp + ".docx";
+
+        // minimal 1x1 PNG
+        var pngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII=";
+        var pngBytes = System.Convert.FromBase64String(pngBase64);
+
+        using (var wordDoc = WordprocessingDocument.Create(file, WordprocessingDocumentType.Document))
+        {
+            var mainPart = wordDoc.AddMainDocumentPart();
+            mainPart.Document = new DocumentFormat.OpenXml.Wordprocessing.Document(new Body());
+            var body = mainPart.Document.Body;
+
+            var imagePart = mainPart.AddImagePart(ImagePartType.Png);
+            using (var stream = imagePart.GetStream())
+                stream.Write(pngBytes, 0, pngBytes.Length);
+
+            var relId = mainPart.GetIdOfPart(imagePart);
+
+            // Build anchor drawing with blip referencing relId
+            var element = new Drawing(
+                new DW.Anchor(
+                    new DW.SimplePosition { X = 0, Y = 0 },
+                    new DW.Extent { Cx = 990000L, Cy = 792000L },
+                    new DW.EffectExtent { LeftEdge = 0L, TopEdge = 0L, RightEdge = 0L, BottomEdge = 0L },
+                    new DW.DocProperties { Id = (UInt32Value)2U, Name = "Picture Anchor" },
+                    new DW.NonVisualGraphicFrameDrawingProperties(
+                        new A.GraphicFrameLocks { NoChangeAspect = true }
+                    ),
+                    new A.Graphic(
+                        new A.GraphicData(
+                            new PIC.Picture(
+                                new PIC.NonVisualPictureProperties(new PIC.NonVisualDrawingProperties { Id = (UInt32Value)0U, Name = "image.png" }, new PIC.NonVisualPictureDrawingProperties()), new PIC.BlipFill(
+                                    new A.Blip() { Embed = relId },
+                                    new A.Stretch(new A.FillRectangle())
+                                ),
+                                new PIC.ShapeProperties(new A.Transform2D(new A.Offset(), new A.Extents { Cx = 990000L, Cy = 792000L }))
+                            )
+                        ) { Uri = "http://schemas.openxmlformats.org/drawingml/2006/picture" }
+                    )
+                ) { DistanceFromTop = (UInt32Value)0U, DistanceFromBottom = (UInt32Value)0U, DistanceFromLeft = (UInt32Value)0U, DistanceFromRight = (UInt32Value)0U }
+            );
+
+            var para = new Paragraph();
+            var run1 = new Run(new Text("Start "));
+            var run2 = new Run();
+            run2.Append(element);
+            var run3 = new Run(new Text(" End"));
+            para.Append(run1);
+            para.Append(run2);
+            para.Append(run3);
+            body.Append(para);
+            mainPart.Document.Save();
+        }
+
+        var doc = DocxDocumentLoader.Load(file);
+
+        var paragraph = doc.Children.OfType<DocParagraph>().FirstOrDefault();
+        Assert.NotNull(paragraph);
+        Assert.True(paragraph.Runs.Count >= 3);
+        // the middle run should have the anchor image attached
+        Assert.Contains(paragraph.Runs[1].Children, c => c is DocImage);
+
+        File.Delete(file);
+    }
 }
