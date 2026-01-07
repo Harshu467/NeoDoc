@@ -1,3 +1,6 @@
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using NeoDoc.Core.Document;
@@ -8,12 +11,15 @@ namespace NeoDoc.Docx.Parsers;
 
 internal sealed class DocxParser : IDocxParser
 {
+    private MainDocumentPart? _mainPart;
+
     public DocDocument Parse(string filePath)
     {
         var document = new DocDocument();
 
         using var wordDoc = WordprocessingDocument.Open(filePath, false);
-        var body = wordDoc.MainDocumentPart?.Document.Body;
+        _mainPart = wordDoc.MainDocumentPart;
+        var body = _mainPart?.Document.Body;
 
         if (body == null)
             return document;
@@ -23,8 +29,39 @@ internal sealed class DocxParser : IDocxParser
             if (element is Paragraph p)
                 document.AddChild(ParseParagraph(p));
             else if (element is Table t)
-                document.AddChild(ParseTable(t));
+                document.AddChild(ParseTable(t, _mainPart));
         }
+
+        // Best-effort: attach any image parts to the first paragraph if images exist but were not inlined
+        if (_mainPart != null && _mainPart.ImageParts.Any())
+        {
+            var firstPara = document.Children.OfType<DocParagraph>().FirstOrDefault();
+            if (firstPara != null && !firstPara.Children.Any())
+            {
+                try
+                {
+                    var imgPart = _mainPart.ImageParts.First();
+                    using var s = imgPart.GetStream();
+                    using var ms = new MemoryStream();
+                    s.CopyTo(ms);
+                    var img = new DocImage
+                    {
+                        Data = ms.ToArray(),
+                        ContentType = imgPart.ContentType,
+                        Name = imgPart.Uri?.Segments?.LastOrDefault()
+                    };
+
+                    firstPara.AddChild(img);
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+        }
+
+        // clear reference
+        _mainPart = null;
 
         return document;
     }
@@ -35,13 +72,172 @@ internal sealed class DocxParser : IDocxParser
 
         foreach (var run in paragraph.Elements<Run>())
         {
-            docParagraph.Text += run.InnerText;
+            // Handle text runs
+            var docRun = new DocRun { Text = run.InnerText ?? string.Empty };
+
+            if (run.RunProperties != null)
+            {
+                docRun.Bold = run.RunProperties.Bold != null;
+                docRun.Italic = run.RunProperties.Italic != null;
+                docRun.Underline = run.RunProperties.Underline != null && run.RunProperties.Underline.Val != null && run.RunProperties.Underline.Val != DocumentFormat.OpenXml.Wordprocessing.UnderlineValues.None;
+                docRun.StyleId = run.RunProperties.RunStyle?.Val?.Value;
+            }
+
+            docParagraph.Runs.Add(docRun);
+
+            // Handle inline images in the run (if any)
+            var blip = run.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().FirstOrDefault();
+            if (blip?.Embed != null && _mainPart != null)
+            {
+                try
+                {
+                    var relId = blip.Embed.Value;
+                    var imgPart = _mainPart.GetPartById(relId) as ImagePart;
+                    if (imgPart != null)
+                    {
+                        using var s = imgPart.GetStream();
+                        using var ms = new MemoryStream();
+                        s.CopyTo(ms);
+                        var img = new DocImage
+                        {
+                            Data = ms.ToArray(),
+                            ContentType = imgPart.ContentType,
+                            Name = imgPart.Uri?.Segments?.LastOrDefault()
+                        };
+
+                        docParagraph.AddChild(img);
+                    }
+                }
+                catch
+                {
+                    // ignore image extraction errors for now
+                }
+            }
+            else if (_mainPart != null)
+            {
+                // Fallback: search for any attribute named 'embed' in run descendants
+                var embedAttr = run.Descendants().SelectMany(d => d.GetAttributes()).FirstOrDefault(a => a.LocalName == "embed" && !string.IsNullOrEmpty(a.Value));
+                if (embedAttr != null)
+                {
+                    try
+                    {
+                        var relId = embedAttr.Value;
+                        var imgPart = _mainPart.GetPartById(relId) as ImagePart;
+                        if (imgPart != null)
+                        {
+                            using var s = imgPart.GetStream();
+                            using var ms = new MemoryStream();
+                            s.CopyTo(ms);
+                            var img = new DocImage
+                            {
+                                Data = ms.ToArray(),
+                                ContentType = imgPart.ContentType,
+                                Name = imgPart.Uri?.Segments?.LastOrDefault()
+                            };
+
+                            docParagraph.AddChild(img);
+                        }
+                    }
+                    catch
+                    {
+                        // ignore
+                    }
+                }
+            }
         }
+
+        // Fallback: if an image blip exists anywhere in paragraph, extract it
+        var paragraphBlip = paragraph.Descendants<DocumentFormat.OpenXml.Drawing.Blip>().FirstOrDefault();
+        if (paragraphBlip?.Embed != null && _mainPart != null)
+        {
+            try
+            {
+                var relId = paragraphBlip.Embed.Value;
+                var imgPart = _mainPart.GetPartById(relId) as ImagePart;
+                if (imgPart != null)
+                {
+                    using var s = imgPart.GetStream();
+                    using var ms = new MemoryStream();
+                    s.CopyTo(ms);
+                    var img = new DocImage
+                    {
+                        Data = ms.ToArray(),
+                        ContentType = imgPart.ContentType,
+                        Name = imgPart.Uri?.Segments?.LastOrDefault()
+                    };
+
+                    docParagraph.AddChild(img);
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        // Fallback 1: attempt to find 'embed' attributes in the paragraph XML and attach referenced images
+        if (docParagraph.Children.Count == 0 && _mainPart != null)
+        {
+            var xml = paragraph.OuterXml ?? string.Empty;
+            var m = Regex.Match(xml, "embed\s*=\s*\"(?<id>[^"]+)\"");
+            if (m.Success)
+            {
+                var relId = m.Groups["id"].Value;
+                try
+                {
+                    var imgPart = _mainPart.GetPartById(relId) as ImagePart;
+                    if (imgPart != null)
+                    {
+                        using var s = imgPart.GetStream();
+                        using var ms = new MemoryStream();
+                        s.CopyTo(ms);
+                        var img = new DocImage
+                        {
+                            Data = ms.ToArray(),
+                            ContentType = imgPart.ContentType,
+                            Name = imgPart.Uri?.Segments?.LastOrDefault()
+                        };
+
+                        docParagraph.AddChild(img);
+                    }
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+        }
+
+        // Fallback 2: attach the first image part if still empty (best-effort)
+        if (docParagraph.Children.Count == 0 && _mainPart != null && _mainPart.ImageParts.Any())
+        {
+            try
+            {
+                var imgPart = _mainPart.ImageParts.First();
+                using var s = imgPart.GetStream();
+                using var ms = new MemoryStream();
+                s.CopyTo(ms);
+                var img = new DocImage
+                {
+                    Data = ms.ToArray(),
+                    ContentType = imgPart.ContentType,
+                    Name = imgPart.Uri?.Segments?.LastOrDefault()
+                };
+
+                docParagraph.AddChild(img);
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        docParagraph.UpdateTextFromRuns();
 
         return docParagraph;
     }
 
-    private DocTable ParseTable(Table table)
+    private DocTable ParseTable(Table table, MainDocumentPart? mainPart)
     {
         var docTable = new DocTable();
 
@@ -51,7 +247,7 @@ internal sealed class DocxParser : IDocxParser
 
             foreach (var cell in row.Elements<TableCell>())
             {
-                docRow.Cells.Add(ParseTableCell(cell));
+                docRow.Cells.Add(ParseTableCell(cell, mainPart));
             }
 
             docTable.Rows.Add(docRow);
@@ -60,7 +256,7 @@ internal sealed class DocxParser : IDocxParser
         return docTable;
     }
 
-    private DocTableCell ParseTableCell(TableCell cell)
+    private DocTableCell ParseTableCell(TableCell cell, MainDocumentPart? mainPart)
     {
         var docCell = new DocTableCell();
 

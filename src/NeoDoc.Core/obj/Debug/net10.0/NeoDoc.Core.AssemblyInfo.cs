@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("NeoDoc.Core")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+68d020bdeedabc8a1e3081a0b2f952908cdb238b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7d13dcfb04e2c202f5d80e4cac7d176c317ffb65")]
 [assembly: System.Reflection.AssemblyProductAttribute("NeoDoc.Core")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NeoDoc.Core")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

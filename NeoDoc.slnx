@@ -9,4 +9,8 @@
     <Project Path="src/NeoDoc.Rules/NeoDoc.Rules.csproj" />
     <Project Path="src/NeoDoc/NeoDoc.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NeoDoc.Benchmarks/NeoDoc.Benchmarks.csproj" />
+    <Project Path="tests/NeoDoc.Tests/NeoDoc.Tests.csproj" />
+  </Folder>
 </Solution>
