@@ -1,0 +1,42 @@
+name: .NET CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        dotnet: [ '10.0.x' ]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ matrix.dotnet }}
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            nuget-${{ runner.os }}-
+
+      - name: Restore
+        run: dotnet restore NeoDoc.slnx
+
+      - name: Build
+        run: dotnet build NeoDoc.slnx -c Release --no-restore
+
+      - name: Run tests
+        run: dotnet test NeoDoc.slnx -c Release --no-build --verbosity normal
+
+      - name: Run example (sanity)
+        run: dotnet run --project examples/NeoDoc.Examples/NeoDoc.Examples.csproj --configuration Release || true

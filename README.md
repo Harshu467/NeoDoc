@@ -1,3 +1,25 @@
+# NeoDoc
+
+NeoDoc is a lightweight document conversion library focused on streaming-friendly APIs and modular format handlers.
+
+Quick build:
+
+```bash
+dotnet build NeoDoc.slnx -c Release
+```
+
+Example (DOCX -> HTML):
+
+```bash
+dotnet run --project examples/NeoDoc.Examples/NeoDoc.Examples.csproj
+```
+
+Repository layout:
+- `src/NeoDoc.Core` — core document model
+- `src/NeoDoc.Docx` — DOCX parser
+- `src/NeoDoc.Html` — HTML renderer and streamer
+- `src/NeoDoc.Rules` — transformation rules
+- `examples/NeoDoc.Examples` — example application
 Understood.
 Below is a **clean, professional, internal-facing `README.md`** suitable for a **commercial product repository** that your **team members** will see.
 No marketing fluff, no open-source tone — this is how real SDK teams write internal READMEs.

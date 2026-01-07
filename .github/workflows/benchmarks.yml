@@ -1,0 +1,29 @@
+name: Benchmarks
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 3 * * *' # nightly at 03:00 UTC
+
+jobs:
+  benchmarks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore
+        run: dotnet restore NeoDoc.slnx
+
+      - name: Build
+        run: dotnet build NeoDoc.slnx -c Release --no-restore
+
+      - name: Run Benchmarks
+        run: |
+          dotnet run --project tests/NeoDoc.Benchmarks/NeoDoc.Benchmarks.csproj -c Release -- --runtimes
+        # Note: benchmarking can be slow; adjust schedule as needed.
