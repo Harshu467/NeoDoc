@@ -48,7 +48,7 @@ internal sealed class DocxParser : IDocxParser
                     {
                         Data = ms.ToArray(),
                         ContentType = imgPart.ContentType,
-                        Name = imgPart.Uri?.Segments?.LastOrDefault()
+                        Name = Path.GetFileName(imgPart.Uri?.ToString())
                     };
 
                     firstPara.AddChild(img);
@@ -102,7 +102,7 @@ internal sealed class DocxParser : IDocxParser
                         {
                             Data = ms.ToArray(),
                             ContentType = imgPart.ContentType,
-                            Name = imgPart.Uri?.Segments?.LastOrDefault()
+                            Name = Path.GetFileName(imgPart.Uri?.ToString())
                         };
 
                         // Attach image to the specific run
@@ -133,7 +133,7 @@ internal sealed class DocxParser : IDocxParser
                             {
                                 Data = ms.ToArray(),
                                 ContentType = imgPart.ContentType,
-                                Name = imgPart.Uri?.Segments?.LastOrDefault()
+                                Name = Path.GetFileName(imgPart.Uri?.ToString())
                             };
 
                             docRun.AddChild(img);
@@ -164,7 +164,7 @@ internal sealed class DocxParser : IDocxParser
                     {
                         Data = ms.ToArray(),
                         ContentType = imgPart.ContentType,
-                        Name = imgPart.Uri?.Segments?.LastOrDefault()
+                        Name = Path.GetFileName(imgPart.Uri?.ToString())
                     };
 
                     var runs = paragraph.Elements<Run>().ToList();
@@ -175,7 +175,12 @@ internal sealed class DocxParser : IDocxParser
                         if (idx >= 0 && idx < docParagraph.Runs.Count)
                             docParagraph.Runs[idx].AddChild(img);
                         else
-                            docParagraph.AddChild(img);
+                        {
+                            if (docParagraph.Runs.Any())
+                                docParagraph.Runs.First().AddChild(img);
+                            else
+                                docParagraph.AddChild(img);
+                        }
                     }
                     else if (docParagraph.Runs.Any())
                     {
@@ -197,7 +202,7 @@ internal sealed class DocxParser : IDocxParser
         if (docParagraph.Children.Count == 0 && _mainPart != null)
         {
             var xml = paragraph.OuterXml ?? string.Empty;
-            var m = Regex.Match(xml, "embed\s*=\s*\"(?<id>[^"]+)\"");
+            var m = Regex.Match(xml, "embed\\s*=\\s*\"(?<id>[^\\\"]+)\"");
             if (m.Success)
             {
                 var relId = m.Groups["id"].Value;
@@ -213,7 +218,7 @@ internal sealed class DocxParser : IDocxParser
                         {
                             Data = ms.ToArray(),
                             ContentType = imgPart.ContentType,
-                            Name = imgPart.Uri?.Segments?.LastOrDefault()
+                            Name = Path.GetFileName(imgPart.Uri?.ToString())
                         };
 
                         // Attach to run that references this relId when possible
@@ -225,7 +230,12 @@ internal sealed class DocxParser : IDocxParser
                             if (idx >= 0 && idx < docParagraph.Runs.Count)
                                 docParagraph.Runs[idx].AddChild(img);
                             else
-                                docParagraph.AddChild(img);
+                            {
+                                if (docParagraph.Runs.Any())
+                                    docParagraph.Runs.First().AddChild(img);
+                                else
+                                    docParagraph.AddChild(img);
+                            }
                         }
                         else if (docParagraph.Runs.Any())
                         {
@@ -257,13 +267,18 @@ internal sealed class DocxParser : IDocxParser
                 {
                     Data = ms.ToArray(),
                     ContentType = imgPart.ContentType,
-                    Name = imgPart.Uri?.Segments?.LastOrDefault()
+                    Name = Path.GetFileName(imgPart.Uri?.ToString())
                 };
 
                 if (docParagraph.Runs.Any())
                     docParagraph.Runs.First().AddChild(img);
-                else
-                    docParagraph.AddChild(img);
+                        else
+                        {
+                            if (docParagraph.Runs.Any())
+                                docParagraph.Runs.First().AddChild(img);
+                            else
+                                docParagraph.AddChild(img);
+                        }
             }
             catch
             {

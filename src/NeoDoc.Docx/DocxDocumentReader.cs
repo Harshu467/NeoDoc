@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using NeoDoc.Core.Document;
@@ -70,10 +71,9 @@ public sealed class DocxDocumentReader : IDocumentReader
                         {
                             Data = ms.ToArray(),
                             ContentType = imgPart.ContentType,
-                            Name = imgPart.Uri?.Segments?.LastOrDefault()
+                            Name = Path.GetFileName(imgPart.Uri?.ToString())
                         };
 
-                        // Attach image to this run
                         docRun.AddChild(img);
                     }
                 }
@@ -100,7 +100,7 @@ public sealed class DocxDocumentReader : IDocumentReader
                             {
                                 Data = ms.ToArray(),
                                 ContentType = imgPart.ContentType,
-                                Name = imgPart.Uri?.Segments?.LastOrDefault()
+                                Name = Path.GetFileName(imgPart.Uri?.ToString())
                             };
 
                             docRun.AddChild(img);
@@ -131,7 +131,7 @@ public sealed class DocxDocumentReader : IDocumentReader
                     {
                         Data = ms.ToArray(),
                         ContentType = imgPart.ContentType,
-                        Name = imgPart.Uri?.Segments?.LastOrDefault()
+                        Name = Path.GetFileName(imgPart.Uri?.ToString())
                     };
 
                     var runs = paragraph.Elements<Run>().ToList();
@@ -141,6 +141,8 @@ public sealed class DocxDocumentReader : IDocumentReader
                         var idx = runs.IndexOf(runWithBlip);
                         if (idx >= 0 && idx < docParagraph.Runs.Count)
                             docParagraph.Runs[idx].AddChild(img);
+                        else if (docParagraph.Runs.Any())
+                            docParagraph.Runs.First().AddChild(img);
                         else
                             docParagraph.AddChild(img);
                     }
@@ -164,7 +166,7 @@ public sealed class DocxDocumentReader : IDocumentReader
         if (docParagraph.Children.Count == 0 && mainPart != null)
         {
             var xml = paragraph.OuterXml ?? string.Empty;
-            var m = Regex.Match(xml, "embed\\s*=\\s*\"(?<id>[^\"]+)\"");
+            var m = Regex.Match(xml, "embed\\s*=\\s*\"(?<id>[^\\\"]+)\"");
             if (m.Success)
             {
                 var relId = m.Groups["id"].Value;
@@ -180,7 +182,7 @@ public sealed class DocxDocumentReader : IDocumentReader
                         {
                             Data = ms.ToArray(),
                             ContentType = imgPart.ContentType,
-                            Name = imgPart.Uri?.Segments?.LastOrDefault()
+                            Name = Path.GetFileName(imgPart.Uri?.ToString())
                         };
 
                         var runs = paragraph.Elements<Run>().ToList();
@@ -190,6 +192,8 @@ public sealed class DocxDocumentReader : IDocumentReader
                             var idx = runs.IndexOf(runWithRel);
                             if (idx >= 0 && idx < docParagraph.Runs.Count)
                                 docParagraph.Runs[idx].AddChild(img);
+                            else if (docParagraph.Runs.Any())
+                                docParagraph.Runs.First().AddChild(img);
                             else
                                 docParagraph.AddChild(img);
                         }
@@ -223,7 +227,7 @@ public sealed class DocxDocumentReader : IDocumentReader
                 {
                     Data = ms.ToArray(),
                     ContentType = imgPart.ContentType,
-                    Name = imgPart.Uri?.Segments?.LastOrDefault()
+                    Name = Path.GetFileName(imgPart.Uri?.ToString())
                 };
 
                 if (docParagraph.Runs.Any())
