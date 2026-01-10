@@ -197,7 +197,7 @@ internal sealed class DocxParser : IDocxParser
         if (docParagraph.Children.Count == 0 && _mainPart != null)
         {
             var xml = paragraph.OuterXml ?? string.Empty;
-            var m = Regex.Match(xml, "embed\s*=\s*\"(?<id>[^"]+)\"");
+            var m = Regex.Match(xml, "(?:embed|r:id)\\s*=\\s*\"(?<id>[^\"]+)\"");
             if (m.Success)
             {
                 var relId = m.Groups["id"].Value;
